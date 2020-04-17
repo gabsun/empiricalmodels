@@ -73,6 +73,8 @@ writemodel = function(prediction,siteindex,met_varnames,flux_varnames,logfilenam
 		ncatt_put(ncid,varid=0,attname='Exclusions',
  			attval='Empirical model trained only on non-gap-filled data')
 	}
+	ncatt_put(ncid,varid=0,attname='Code_repository',attval=system('git remote get-url origin --push',intern=TRUE))
+	ncatt_put(ncid,varid=0,attname='Code_revision',attval=system('git rev-parse master',intern=TRUE))
 	ncatt_put(ncid,varid=0,attname='Contact',attval='Gab Abramowitz: gabsun@gmail.com')
 
 	# Add time-independent variable data to file:
@@ -85,7 +87,4 @@ writemodel = function(prediction,siteindex,met_varnames,flux_varnames,logfilenam
 	}
 	nc_close(ncid)
 	return()
-
-	# add version of this code!
-
 }

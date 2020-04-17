@@ -24,10 +24,10 @@ source('Predict.R')
 source('WriteFiles.R')
 
 runparallel = TRUE # single or multicore execution: FALSE for debugging, much faster if TRUE
-#metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/met_inputs/'
-#fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/flux_files/'
-metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Met/'
-fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Flux/'
+metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/met_inputs/'
+fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/flux_files/'
+#metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Met/'
+#fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Flux/'
 outfile_dir = '/Users/gab/results/PLUMBER/empirical_models/model_output/'
 # if dirs above are changed, this need to be deleted:
 tmp_data_save_file = '/Users/gab/results/PLUMBER/empirical_models/saved_variables.Rdat'
