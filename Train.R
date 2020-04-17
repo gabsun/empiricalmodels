@@ -4,10 +4,9 @@
 #
 # Gab Abramowitz CCRC/CLEX, UNSW 2020 (gabsun at gmail dot com)
 
-TrainEmpiricalModels = function(sitedata,emodels,met_varnames,flux_varnames,logfilename,alldata,removeflagged=TRUE){
+TrainEmpiricalModels = function(sitedata,emodels,met_varnames,flux_varnames,logfilename,
+	alldata,removeflagged=TRUE){
 	# For a given site (coming from lapply/parlapply), trains all empirical models for all flux variables.
-	library(pals)
-	source('Train.R')
 	writelog(paste0(' Training model for site ',sitedata$name,
 		':            (time ',proc.time()[3],'s)'),filename=logfilename)
 	nemodels = length(emodels) # number of requested empirical model types

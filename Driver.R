@@ -24,8 +24,10 @@ source('Predict.R')
 source('WriteFiles.R')
 
 runparallel = TRUE # single or multicore execution: FALSE for debugging, much faster if TRUE
-metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/met_inputs/'
-fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/flux_files/'
+#metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/met_inputs/'
+#fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/flux_files/'
+metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Met/'
+fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Flux/'
 outfile_dir = '/Users/gab/results/PLUMBER/empirical_models/model_output/'
 # if dirs above are changed, this need to be deleted:
 tmp_data_save_file = '/Users/gab/results/PLUMBER/empirical_models/saved_variables.Rdat'
@@ -42,12 +44,12 @@ data = LoadData(metfile_dir,fluxfile_dir,met_varnames,flux_varnames,
 	tmp_data_save_file,logfilename)
 
 if(runparallel){
-	cl = makeCluster(getOption('cl.cores', detectCores())) #	Create cluster
+	cl = makeCluster(getOption('cl.cores', 2),type='FORK') #	Create cluster
 	# Train empirical models, parallel applied over each site:
 	trainedmodels = parLapply(cl=cl,data,TrainEmpiricalModels,emodels,met_varnames,
 		flux_varnames,logfilename,data)
 	# Predict using trained empirical models, parallel applied over each site:
-	predictions = parLapply(cl=cl,trained,PredictEmpiricalFlux,emodels,met_varnames,
+	predictions = parLapply(cl=cl,trainedmodels,PredictEmpiricalFlux,emodels,met_varnames,
 		flux_varnames,logfilename,data)
 	write_to_file = parLapply(cl=cl,predictions,write_emp_predictions,emodels,
 		met_varnames,flux_varnames,logfilename,data,outfile_dir,trainedmodels)

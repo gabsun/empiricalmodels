@@ -1,3 +1,10 @@
+# Predict.R
+#
+# Functions for using existing empirical model parameters to make predictions
+# based on met data.
+#
+# Gab Abramowitz CCRC/CLEX, UNSW 2020 (gabsun at gmail dot com)
+
 PredictEmpiricalFlux = function(trainedmodels,emodels,met_varnames,flux_varnames,
 	logfilename,alldata){
 	# For a given site (coming from lapply/parlapply), uses trained empirical models for all variables.
