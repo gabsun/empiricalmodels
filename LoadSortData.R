@@ -109,6 +109,20 @@ CreateTrainIndex = function(sitenumber,numberofsites){
   return(shortened_index_vector)
 }
 
+min_index = function(vector){
+	# returns the index in the vector argument that contains the minimum value
+	minval = min(vector)
+	minin = c(1:length(vector))[vector==minval]
+	return(minin)
+}
+
+min_index_matrix = function(matrix){
+	# returns the index in the vector argument that contains the minimum value
+	minval = min(vector)
+	minin = c(1:length(vector))[vector==minval]
+	return(minin)
+}
+
 smem = function(){
   # Just to make memory reporting to lof file a little more intuitive,
   # Reports in Mb instead of b (ish), with units
