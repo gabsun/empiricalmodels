@@ -1,4 +1,4 @@
-# Driver.R
+# Driver_parallel.R
 #
 # This driver is used, over a collection of tower sites, to (a) train empirical
 # models used to benchmark LM simulations using flux tower data (b) predict surface
@@ -15,6 +15,7 @@
 # 4. Write predictions to netcdf file(s)
 
 library(pals)
+library(parallel)
 library(pryr)
 library(ncdf4)
 library(cluster)
@@ -25,6 +26,7 @@ source('Train.R')
 source('Predict.R')
 source('WriteFiles.R')
 
+runparallel = FALSE # single or multicore execution: FALSE for debugging, much faster if TRUE
 metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/met_inputs/'
 fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/flux_files/'
 #metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Met/'
@@ -36,27 +38,33 @@ logfilename = 'logEmpiricalmodel.log'
 met_varnames = c('SWdown','Tair','RH')
 flux_varnames = c('Qle','Qh','NEE') #'Qle','Qh','NEE'
 emodels = c('3km27') #,'2lin','3km27')
-sitenumbers = c(1:2) # which sites should we build models for (in above dirs)
 
 system(paste('rm',logfilename)) # remove any old logfile
 openlog(filename=logfilename) # open log file to detail proceedings
 
 # Load all site data:
 data = LoadData(metfile_dir,fluxfile_dir,met_varnames,flux_varnames,
-	tmp_data_save_dir,logfilename,sitenumbers)
+	tmp_data_save_dir,logfilename)
 
-for(s in 1:length(sitenumbers)){
+if(runparallel){
+	clst = makeCluster(getOption('cl.cores', 2),type='FORK') #	Create cluster
 	# Train empirical models, parallel applied over each site:
-	trainedmodel = TrainEmpiricalModels(data[[s]],emodels,met_varnames,
+	trainedmodels = parLapply(cl=clst,data,TrainEmpiricalModels,emodels,met_varnames,
 		flux_varnames,logfilename,data)
 	# Predict using trained empirical models, parallel applied over each site:
-	prediction = PredictEmpiricalFlux(trainedmodel,emodels,met_varnames,
+	predictions = parLapply(cl=clst,trainedmodels,PredictEmpiricalFlux,emodels,met_varnames,
 		flux_varnames,logfilename,data)
-	# create temporary list:
-	trainedmodels = list()
-	trainedmodels[[s]] = trainedmodel
-	# Write predictions and saved models to file:
-	write_to_file = write_emp_predictions(prediction,emodels,met_varnames,
+	write_to_file = parLapply(cl=clst,predictions,write_emp_predictions,emodels,
+		met_varnames,flux_varnames,logfilename,data,outfile_dir,tmp_data_save_dir,trainedmodels)
+	stopCluster(clst)
+}else{
+	# Train empirical models, parallel applied over each site:
+	trainedmodels = lapply(data,TrainEmpiricalModels,emodels,met_varnames,
+		flux_varnames,logfilename,data)
+	# Predict using trained empirical models, parallel applied over each site:
+	predictions = lapply(trainedmodels,PredictEmpiricalFlux,emodels,met_varnames,
+		flux_varnames,logfilename,data)
+	write_to_file = lapply(predictions,write_emp_predictions,emodels,met_varnames,
 		flux_varnames,logfilename,data,outfile_dir,tmp_data_save_dir,trainedmodels)
 }
 

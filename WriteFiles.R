@@ -5,7 +5,7 @@
 # Gab Abramowitz CCRC/CLEX, UNSW 2020 (palshelp at gmail dot com)
 
 write_emp_predictions = function(predictions,emodels,met_varnames,flux_varnames,
-	logfilename,alldata,outfile_dir,trainedmodels,removeflagged=TRUE){
+	logfilename,alldata,outfile_dir,tmp_data_save_dir,trainedmodels,removeflagged=TRUE){
 	# Write empirical model predictions to file for a single site (coming from lapply/parlapply)
 	writelog(paste0(' Writing model predictions for site ',alldata[[predictions$siteindex]]$name,
 		':            (time ',proc.time()[3],'s)'),filename=logfilename)
@@ -15,6 +15,11 @@ write_emp_predictions = function(predictions,emodels,met_varnames,flux_varnames,
 		writemodel(predictions[[em]],predictions$siteindex,met_varnames,
 			flux_varnames,logfilename,alldata,removeflagged,modelname=emodels[em],outfile_dir,
 			trainedmodels[[predictions$siteindex]][[em]]$eminputs)
+		# Define trained model list for this site and empirical model
+		trainedmodel = trainedmodels[[predictions$siteindex]][[em]]
+		# Now save trained models to file for this site:
+		save(trainedmodel,file=paste0(tmp_data_save_dir,'trained_models/',emodels[em],'/',
+		 	alldata[[predictions$siteindex]]$name,'.Rdat'))
 	}
 }
 return()
