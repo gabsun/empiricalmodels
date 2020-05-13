@@ -5,18 +5,18 @@
 # Gab Abramowitz CCRC/CLEX, UNSW 2020 (gabsun at gmail dot com)
 
 LoadData = function(metfile_dir,fluxfile_dir,met_var,flux_var,
-  tmp_data_save_dir,logfilename,sitenumbers){
+  data_save_dir,logfilename){
   writelog(paste('Memory used @ start LoadData:',smem()),filename=logfilename)
   # List files in met and flux directories:
   metfiles=list.files(path=metfile_dir)
   fluxfiles=list.files(path=fluxfile_dir)
   nsites = length(metfiles) # number of sites
-  tmp_data_save_file = paste0(tmp_data_save_dir,'Fluxdata',nsites,
-    '_sites',paste0(sitenumbers,collapse=''),'.Rdat')
+  data_save_file = paste0(data_save_dir,'Fluxdata',nsites,
+    '_sites.Rdat')
   # Check if local save file for this exists, load if it does:
-  if(file.exists(tmp_data_save_file)){
-    load(file=tmp_data_save_file)
-    writelog(paste0('Loaded site data from ',tmp_data_save_file,
+  if(file.exists(data_save_file)){
+    load(file=data_save_file)
+    writelog(paste0('Loaded site data from ',data_save_file,
       ' (',smem(),')'),filename=logfilename)
   }else{
     # Otherwise read flux tower data files to collect data:
@@ -86,9 +86,9 @@ LoadData = function(metfile_dir,fluxfile_dir,met_var,flux_var,
       data[[s]]$trainset_tsteps = sum(tsteps_per_site[data[[s]]$train_index])
       data[[s]]$trainset_names = paste0(namesvector[data[[s]]$train_index],collapse=', ')
     }
-    writelog(paste('Writing site data to',tmp_data_save_file,'to speed loading next
+    writelog(paste('Writing site data to',data_save_file,'to speed loading next
       time...'),filename=logfilename)
-    save(data,file=tmp_data_save_file)
+    save(data,file=data_save_file)
   }
   return(data)
 }

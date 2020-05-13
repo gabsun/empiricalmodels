@@ -12,19 +12,25 @@ PredictEmpiricalFlux = function(trainedmodels,emodels,met_varnames,flux_varnames
 		':            (time ',proc.time()[3],'s)'),filename=logfilename)
 	nemodels = length(emodels) # number of requested empirical model types
 	emod_predictions = list() # empirical model predictions
+	# Decide which empirical model functions need to be called:
+	clustermods = c('som','km') # text flags that we're going to call the cluster function
+	emod_simple = emodels # init. names of empirical models with all cluster models reduced to 'cluster'
+	for(cl in 1:length(clustermods)){
+		emod_simple = ifelse(grepl(pattern=clustermods[cl],emod_simple),'clustermod',emod_simple)
+	}
 	# Fetch empirical model function names:
-	emod_functions = mget(paste0('predict_',emodels),mode='function',inherits=TRUE,envir = globalenv())
+	emod_functions = mget(paste0('predict_',emod_simple),mode='function',inherits=TRUE,envir = globalenv())
 	# Call empirical model functions - each call get model for all flux variable predictions:
 	for(em in 1:nemodels){
 		emod_predictions[[em]] = emod_functions[[em]](trainedmodels[[em]],trainedmodels$siteindex,
-			met_varnames,flux_varnames,logfilename,alldata)
+			emodels[em],met_varnames,flux_varnames,logfilename,alldata)
 	}
 	# save so we can identify site for these model predictions later
 	emod_predictions$siteindex = trainedmodels$siteindex
 	return(emod_predictions)
 }
 
-predict_1lin = function(trainedmodel,siteindex,met_varnames,flux_varnames,logfilename,alldata){
+predict_1lin = function(trainedmodel,siteindex,modelname,met_varnames,flux_varnames,logfilename,alldata){
 	# Linear model predicting flux from SWdown only. Uses existing linear model parameters for
 	# all requested fluxes to be predicted.
 	writelog(paste0('  predicting with 1lin...  (',smem(),'; ',proc.time()[3],'s)'),filename=logfilename)
@@ -42,7 +48,7 @@ predict_1lin = function(trainedmodel,siteindex,met_varnames,flux_varnames,logfil
 	return(predictedfluxes)
 }
 
-predict_2lin = function(trainedmodel,siteindex,met_varnames,flux_varnames,logfilename,alldata){
+predict_2lin = function(trainedmodel,siteindex,modelname,met_varnames,flux_varnames,logfilename,alldata){
 	# Linear model predicting flux from SWdown and Tair. Uses linear model parameters for
 	# all requested fluxes to be predicted.
 	writelog(paste0('  predicting with 2lin...  (',smem(),'; ',proc.time()[3],'s)'),filename=logfilename)
@@ -63,24 +69,47 @@ predict_2lin = function(trainedmodel,siteindex,met_varnames,flux_varnames,logfil
 	return(predictedfluxes)
 }
 
-predict_3km27 = function(trainedmodel,siteindex,met_varnames,flux_varnames,logfilename,alldata){
-	# Linear model predicting flux from SWdown and Tair. Uses linear model parameters for
-	# all requested fluxes to be predicted.
-	writelog(paste0('  predicting with 3km27...  (',smem(),'; ',proc.time()[3],'s)'),filename=logfilename)
+predict_clustermod = function(trainedmodel,siteindex,modelname,met_varnames,
+	flux_varnames,logfilename,alldata){
+	# Linear model predicting flux from SWdown and Tair. Uses linear model
+	# parameters for all requested fluxes to be predicted.
+	writelog(paste0('  predicting with ',modelname,
+		'...  (',smem(),'; ',proc.time()[3],'s)'),filename=logfilename)
 	nfluxes = length(flux_varnames) # number of flux predictions we'll require
 	nmetvars = length(met_varnames) # number of met variables in total load request
 	tsteps = alldata[[ siteindex ]]$alltsteps # number of timesteps at prediction site
-	SWdownIndex = c(1:nmetvars)[met_varnames=='SWdown'] # logical mask to pull SWdown out of all met data
-	TairIndex = c(1:nmetvars)[met_varnames=='Tair'] # logical mask to pull Tair out of all met data
-	RHIndex = c(1:nmetvars)[met_varnames=='RH'] # logical mask to pull RH out of all met data
-	nxvars = 3
+
+	# Determine cluster type, number of clusters, and number of input variables:
+	if(grepl('som',modelname)){
+		cluster_type='som'
+		loc = regexpr('som',modelname)
+		nclst = as.integer(substr(modelname,(loc[1]+3),nchar(modelname)))
+		nxvars = as.integer(substr(modelname,1,(loc[1]-1)))
+	}else if(grepl('km',modelname)){
+		cluster_type='kmeans'
+		loc = regexpr('km',modelname)
+		nclst = as.integer(substr(modelname,(loc[1]+2),nchar(modelname)))
+		nxvars = as.integer(substr(modelname,1,(loc[1]-1)))
+	}else if(grepl('cl',modelname)){
+		cluster_type='clara'
+		loc = regexpr('cl',modelname)
+		nclst = as.integer(substr(modelname,(loc[1]+2),nchar(modelname)))
+		nxvars = as.integer(substr(modelname,1,(loc[1]-1)))
+	}
+	# For now (this could be changed), assume that '3' input variables implies the
+	# first three in the met_varnmes list of loaded variables:
+	xvarnames = met_varnames[1:nxvars]
 
 	# Load data required for prediction:
 	metvars = matrix(NA,tsteps,nxvars) # initialise
 	predictedfluxes = matrix(0,nfluxes,tsteps) # initialise
-	metvars[,1] = alldata[[ siteindex ]]$invars[[ SWdownIndex ]]
-	metvars[,2] = alldata[[ siteindex ]]$invars[[ TairIndex ]]
-	metvars[,3] = alldata[[ siteindex ]]$invars[[ RHIndex ]]
+
+	for(xv in 1:nxvars){ # for each met variable:
+		# First determine the index of this variable in the loaded met data:
+		vIndex = c(1:nmetvars)[met_varnames==xvarnames[xv]]
+		# Then load data :
+		metvars[,xv] = alldata[[ siteindex ]]$invars[[ vIndex ]]
+	}
 
 	for(f in 1:nfluxes){
 		nclst = trainedmodel[[f]]$nclst # SOM may change this number if not a square

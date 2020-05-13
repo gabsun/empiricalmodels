@@ -17,35 +17,31 @@
 library(pals)
 library(pryr)
 library(ncdf4)
-library(cluster)
-library(class)
 library(kohonen)
 source('LoadSortData.R')
 source('Train.R')
 source('Predict.R')
 source('WriteFiles.R')
 
-metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/met_inputs/'
-fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/flux_files/'
-#metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Met/'
-#fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Flux/'
-outfile_dir = '/Users/gab/results/PLUMBER/empirical_models/model_output/'
-# if dirs above are changed, this need to be deleted:
-tmp_data_save_dir = '/Users/gab/results/PLUMBER/empirical_models/'
-logfilename = 'logEmpiricalmodel.log'
+#metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/met_inputs/'
+#fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2_sample/flux_files/'
+metfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Met/'
+fluxfile_dir = '/Users/gab/data/flux_tower/FluxnetLSM/PLUMBER2/Nc_files/Flux/'
+data_save_dir = '/Users/gab/results/PLUMBER/empirical_models/PLUMBER2/'
+logfilename = 'logEmpmodel.log'
 met_varnames = c('SWdown','Tair','RH')
 flux_varnames = c('Qle','Qh','NEE') #'Qle','Qh','NEE'
-emodels = c('3km27') #,'2lin','3km27')
-sitenumbers = c(1:2) # which sites should we build models for (in above dirs)
+emodels = c('3som100') #,'2lin','3som25',3km27)
+sitenumbers = c(22:22) # which sites should we build models for (in above dirs)
 
 system(paste('rm',logfilename)) # remove any old logfile
 openlog(filename=logfilename) # open log file to detail proceedings
 
 # Load all site data:
 data = LoadData(metfile_dir,fluxfile_dir,met_varnames,flux_varnames,
-	tmp_data_save_dir,logfilename,sitenumbers)
+	data_save_dir,logfilename)
 
-for(s in 1:length(sitenumbers)){
+for(s in sitenumbers[1] : sitenumbers[length(sitenumbers)] ){
 	# Train empirical models, parallel applied over each site:
 	trainedmodel = TrainEmpiricalModels(data[[s]],emodels,met_varnames,
 		flux_varnames,logfilename,data)
@@ -57,7 +53,7 @@ for(s in 1:length(sitenumbers)){
 	trainedmodels[[s]] = trainedmodel
 	# Write predictions and saved models to file:
 	write_to_file = write_emp_predictions(prediction,emodels,met_varnames,
-		flux_varnames,logfilename,data,outfile_dir,tmp_data_save_dir,trainedmodels)
+		flux_varnames,logfilename,data,data_save_dir,trainedmodels)
 }
 
 closelog(filename=logfilename)

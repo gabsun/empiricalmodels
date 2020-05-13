@@ -5,7 +5,7 @@
 # Gab Abramowitz CCRC/CLEX, UNSW 2020 (palshelp at gmail dot com)
 
 write_emp_predictions = function(predictions,emodels,met_varnames,flux_varnames,
-	logfilename,alldata,outfile_dir,tmp_data_save_dir,trainedmodels,removeflagged=TRUE){
+	logfilename,alldata,data_save_dir,trainedmodels,removeflagged=TRUE){
 	# Write empirical model predictions to file for a single site (coming from lapply/parlapply)
 	writelog(paste0(' Writing model predictions for site ',alldata[[predictions$siteindex]]$name,
 		':            (time ',proc.time()[3],'s)'),filename=logfilename)
@@ -13,19 +13,25 @@ write_emp_predictions = function(predictions,emodels,met_varnames,flux_varnames,
 	# Write to file separately for each empirical model type:
 	for(em in 1:nemodels){
 		writemodel(predictions[[em]],predictions$siteindex,met_varnames,
-			flux_varnames,logfilename,alldata,removeflagged,modelname=emodels[em],outfile_dir,
+			flux_varnames,logfilename,alldata,removeflagged,modelname=emodels[em],data_save_dir,
 			trainedmodels[[predictions$siteindex]][[em]]$eminputs)
-		# Define trained model list for this site and empirical model
+		# Define trained model list for this site and empirical model for saving, and
+		# make data returned from clustering null:
+		for(f in 1:length(flux_varnames)){
+			trainedmodels[[predictions$siteindex]][[em]][[f]]$clusters$unit.classif = NULL
+			trainedmodels[[predictions$siteindex]][[em]][[f]]$clusters$distances = NULL
+			trainedmodels[[predictions$siteindex]][[em]][[f]]$clusters$data = NULL
+		}
 		trainedmodel = trainedmodels[[predictions$siteindex]][[em]]
 		# Now save trained models to file for this site:
-		save(trainedmodel,file=paste0(tmp_data_save_dir,'trained_models/',emodels[em],'/',
-		 	alldata[[predictions$siteindex]]$name,'.Rdat'))
+		save(trainedmodel,file=paste0(data_save_dir,'trained_models/',emodels[em],'/',
+		 	alldata[[predictions$siteindex]]$name,'_',emodels[em],'.Rdat'))
 	}
 }
 return()
 
 writemodel = function(prediction,siteindex,met_varnames,flux_varnames,logfilename,
-	alldata,removeflagged,modelname,outfile_dir,eminputs){
+	alldata,removeflagged,modelname,data_save_dir,eminputs){
 	# Creates an (empirical) model output file for a single site and all requested fluxes
 
 	# Define netcdf file for storing benchmark simulations:
@@ -59,7 +65,8 @@ writemodel = function(prediction,siteindex,met_varnames,flux_varnames,logfilenam
 	}
 
 	# Create benchmark netcdf file:
-	filename = paste0(outfile_dir,modelname,'/Emp',modelname,'_',alldata[[siteindex]]$name,'.nc')
+	filename = paste0(data_save_dir,'model_output/',modelname,'/Emp',
+		modelname,'_',alldata[[siteindex]]$name,'.nc')
 	ncid = nc_create(filename=filename,vars=vars)
 
 	# Add empirical model attributes to each variable:
